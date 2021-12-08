@@ -10,6 +10,7 @@ class Menu {
   static Menu *instance;
   int selectingOption;
   Settings *settings;
+  int textStartingPos;
   
   Menu();
   void displayMenuWindow(int selectingOption, int optionsSize, String* options);
@@ -24,6 +25,8 @@ class Menu {
     void resetMenu();
     void increaseSelectingOption();
     void decreaseSelectingOption();
+    void scrollTextLeft();
+    void scrollTextRight();
     
     String getState();
     void setState(String value);

@@ -7,6 +7,7 @@ Menu::Menu(){
   selectingOption = 0;
   lcd.begin(16,2);
   lcd.print("Greetings!");
+  textStartingPos = 0;
 }
 Menu* Menu::getInstance(){
   if(!Menu::instance){
@@ -103,9 +104,28 @@ void Menu::displayHighscore(){
 
 void Menu::displayAboutInfo(){
   lcd.clear();
-  lcd.print("Info");
+  for(int i = textStartingPos; i < textStartingPos + 15 && i < githubRepoLink.length(); i++){
+    lcd.print(githubRepoLink[i]);
+  }
   lcd.setCursor(0,1);
   lcd.print(">Back");
+  delay(100);
+}
+
+void Menu::scrollTextRight(){  
+  int maxPos = 0;
+  if(state == "About") maxPos = githubRepoLink.length()-10;
+   
+  if(textStartingPos == maxPos)
+    textStartingPos = 0;
+  else {
+    textStartingPos++;
+  }
+}
+
+void Menu::scrollTextLeft(){  
+  if(textStartingPos > 0)
+    textStartingPos--;
 }
 
 void Menu::resetMenu(){

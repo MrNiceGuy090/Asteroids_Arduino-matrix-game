@@ -18,6 +18,7 @@ const int maxLevel = 20;
 const int levelDuration = 30;
 const int moveInterval = 100;
 const int gameObjectDeploymentInterval = 400;
+const String githubRepoLink = "https://github.com/MrNiceGuy090/Asteroids_Arduino-matrix-game";
 
 //Hardware related
 const int matrixSize = 8;

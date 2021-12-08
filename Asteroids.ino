@@ -104,6 +104,14 @@ void loop() {
       menu->resetMenu();
       menu->show();
     }
+    if(js->isLeft()){
+      menu->scrollTextLeft();
+      menu->show();
+    }
+    else if(js->isRight()){
+      menu->scrollTextRight();
+      menu->show();
+    }
   }
   else if(state == "EditName"){
       menu->getSettings()->changeName();
