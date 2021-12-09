@@ -22,7 +22,7 @@ void setup()
   
   state = states[0];
   LCDSetup();
-  //delay(2000);
+  delay(2000);
   menu->show();
   matrixSetup();
 }

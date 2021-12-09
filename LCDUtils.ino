@@ -12,7 +12,9 @@ void LCDSetup(){
   int lcdContrast = readFromEEPROM<int>(contrastAddrs);
   lcdContrast == 0 ? lcdContrast = defaultContrast : true;
   analogWrite(contrastPin, lcdContrast);
-  lcd.print("Greetings");
+  lcd.print("Welcome to");
+  lcd.setCursor(0,1);  
+  lcd.print("Asteroids");
 }
 void clearLine(int row){
   lcd.setCursor(0,row);   
