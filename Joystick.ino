@@ -42,7 +42,10 @@ bool Joystick::hasButtonBeenPressed(){
     if(swReading != swState){
         swState = swReading;
         // case for falling
-        if(swReading == 0) return true;
+        if(swReading == 0) {
+          tone(buzzerPin, joystickPressBuzzerFreq,joystickPressBuzzerDuration);
+          return true;
+        }
     }
   } 
   return false;

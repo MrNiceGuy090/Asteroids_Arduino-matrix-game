@@ -1,7 +1,7 @@
 #pragma once
 #include "Consts.h"
 
-class GameObject{
+class Asteroid{
   int x;
   int y;
   int movementDirection[2];
@@ -9,9 +9,10 @@ class GameObject{
   static const int directionsSize;
   
   public:
-    GameObject();
+    Asteroid();
     void advance();
-    void generatePosition(int axis);
+    void generateFirstAxis(int axis);
+    void generateSecondAxis(int axis);
     int getX();
     int getY();
 };

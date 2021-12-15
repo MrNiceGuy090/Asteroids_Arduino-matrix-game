@@ -198,8 +198,11 @@ void Settings::changeMatrixBrightness(){
     lcd.print("Matrix Brightness:");
     lcd.setCursor(0,1);    
     lcd.print(value); 
-    for(int i=0; i<8; i++)
-      lc.setLed(0,0,i,1);
+    for(int row = 0; row < matrixSize; row++){
+      for(int col = 0; col < matrixSize; col++){
+          lc.setLed(0, row, col, 1); 
+        }
+    }
     changingMatrixBrightness = true;
   }
   if(js->turnedDownOnce()){
@@ -220,8 +223,11 @@ void Settings::changeMatrixBrightness(){
   if(js->hasButtonBeenPressed()){
     changingMatrixBrightness = false;
     saveToEEPROM<int>(matrixBrightnessAddrs, value);
-    for(int i=0; i<8; i++)
-      lc.setLed(0,0,i,0);
+    for(int row = 0; row < matrixSize; row++){
+      for(int col = 0; col < matrixSize; col++){
+          lc.setLed(0, row, col, 0); 
+        }
+    }
   }
 }
 

@@ -2,7 +2,8 @@
 #include "EEPROMUtils.h"
 #include "Settings.h"
 #include "Joystick.h"
-#include "GameObject.h"
+#include "Asteroid.h"
+#include "Shield.h"
 #include "Consts.h"
 #include <LinkedList.h>
 
@@ -16,15 +17,28 @@ class Game{
   bool isPlayingLevel;
   long levelStartingTime;
   long lastTimerChangeTime;
+  
+  long lastPowerUpCheckTime;
+  bool isPowerUpDisplayed;
+  byte powerUp[2];
+  long powerUpDisplayTime;
+  long powerUpInitTime;
+  long playeBlnkingTime;
+  bool isPlayerBlinking = false;
+  
   int score;
   Joystick* js;
+  int asteroidDeploymentInterval;
+  int asteroidsSpeed;
   
   byte playerPos[2];
-  byte lastPlayerPos[2]; 
+  byte lastPlayerPos[2];
   String playerName;
   
   unsigned int long long lastMoved = 0;
-  unsigned int long long lastDeployedGameObjectTime = 0;
+  unsigned int long long lastDeployedAsteroidTime = 0;
+  unsigned int long long lastAsteroidMovedTime = 0;
+
   bool matrixChanged;
   
   bool displayMatrix[matrixSize][matrixSize]{
@@ -37,7 +51,7 @@ class Game{
     {0,0,0,0,0,0,0,0},
     {0,0,0,0,0,0,0,0}
     };;
-  LinkedList<GameObject*> gameObjectsList;
+  LinkedList<Asteroid*> asteroidsList;
 
   public:
     Game();
@@ -48,11 +62,16 @@ class Game{
     void endLevel(int leve);
     void endGame();
     void updatePlayerPosition();
-    void updateGameObjectsPosition();
+    void updateAsteroidsPosition();
     void updateDisplay();
     void updateLCD();
     void updateScoreAndTimer();
     void updateLives();
-    void placeNewGameObject();
+    void placeNewAsteroid();
     int checkAndSaveHighscore();
+    void checkAndProvidePowerUps();
+    void providePowerUp();
+    void resetPowerUp();
+    void activatePowerUp();
+    int maxAsteroids();
 };

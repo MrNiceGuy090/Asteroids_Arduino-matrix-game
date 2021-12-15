@@ -13,7 +13,7 @@ const String states[10] = {"MainMenu", "Game", "Highscores", "SettingsMenu", "Ab
 String state;
 Menu *menu= Menu::getInstance();
 Joystick *js= Joystick::getInstance();
-Game *game = new Game();
+Game *game;
 
 void setup()
 {
@@ -43,10 +43,12 @@ void loop() {
     }
   }
   else if(state == "Game"){ 
+    if(game == NULL)
+      game = new Game();
     game->playGame();
     if(state == "MainMenu"){
       delete game;
-      game = new Game();
+      game = NULL;
       menu->resetMenu();
       menu->show();
     }
