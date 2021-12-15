@@ -41,5 +41,4 @@ class Settings{
     bool isChangingContrast();
     bool isChangingLCDBrightness();
     bool isChangingMatrixBrightness();
-    int getMaxLevel();
 };

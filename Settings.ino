@@ -246,7 +246,3 @@ bool Settings::isChangingLCDBrightness(){
 bool Settings::isChangingMatrixBrightness(){
   return changingMatrixBrightness;
 }
-
-int Settings::getMaxLevel(){
-  return maxLevel;
-}

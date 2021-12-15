@@ -101,18 +101,28 @@ void loop() {
     }
   }
   else if(state == "About"){    
-    if(js->hasButtonBeenPressed()){
+    if(js->hasButtonBeenPressed() && menu->getSelectingOption() == 1){
       state = "MainMenu";
       menu->resetMenu();
       menu->show();
-    }
-    if(js->isLeft()){
-      menu->scrollTextLeft();
+    }     
+    if(js->turnedDownOnce()){
+      menu->increaseSelectingOption();
       menu->show();
     }
-    else if(js->isRight()){
-      menu->scrollTextRight();
+    else if(js->turnedUpOnce()){
+      menu->decreaseSelectingOption();
       menu->show();
+    }
+    if(menu->getSelectingOption() == 0){
+      if(js->isLeft()){
+        menu->scrollTextLeft();
+        menu->show();
+      }
+      else if(js->isRight()){
+        menu->scrollTextRight();
+        menu->show();
+      }
     }
   }
   else if(state == "EditName"){

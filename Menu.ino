@@ -59,6 +59,7 @@ void Menu::increaseSelectingOption(){
   if(state == "MainMenu") maxPos = 3;
   else if(state == "SettingsMenu") maxPos = 5;
   else if(state == "Highscores") maxPos = 4;
+  else if(state == "About") maxPos = 2;
   
   if(selectingOption == maxPos)
     selectingOption = 0;
@@ -72,6 +73,7 @@ void Menu::decreaseSelectingOption(){
   if(state == "MainMenu") maxPos = 3;
   else if(state == "SettingsMenu") maxPos = 5;
   else if(state == "Highscores") maxPos = 4;
+  else if(state == "About") maxPos = 2;
   
   if(selectingOption == 0)
     selectingOption = maxPos;
@@ -104,11 +106,15 @@ void Menu::displayHighscore(){
 
 void Menu::displayAboutInfo(){
   lcd.clear();
-  for(int i = textStartingPos; i < textStartingPos + 15 && i < githubRepoLink.length(); i++){
-    lcd.print(githubRepoLink[i]);
-  }
-  lcd.setCursor(0,1);
-  lcd.print(">Back");
+  if(selectingOption == 0){
+    lcd.print(">Smeu Stefan");
+    lcd.setCursor(0,1);
+    for(int i = textStartingPos; i < textStartingPos + 15 && i < githubRepoLink.length(); i++){
+      lcd.print(githubRepoLink[i]);
+    }
+  } else
+    lcd.print(">Back");
+  
   delay(100);
 }
 
