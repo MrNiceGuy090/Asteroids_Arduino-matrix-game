@@ -1,19 +1,30 @@
 #include "Game.h"
-#include "Joystick.h"
 
 Game::Game(){
-  lives = 5;
-  time = 0;
+  lives = livesAtStartGame;
+  
+  playerName = readPlayerNameFromEEPROM(currentPlayerNameAddrs);
+  playerSpeed = calculatePlayerSpeed();
+  
   int memLevel = readFromEEPROM<int>(levelAddrs);
   currentLevel = memLevel == 0? 1 : memLevel;
+  
   isPlayingLevel = false;
+  gameEnded = false;
+  
+  isPlayerBlinking = isPlayerBlinkingDefault;
+  isPowerUpDisplayed = false;
+  
   levelStartingTime = 0;
   lastTimerChangeTime = 0;
   playeBlnkingTime = 0;
+  lastPowerUpCheckTime = 0;  
+  powerUpDisplayTime = 0;
+  powerUpInitTime = 0;
   score = 0;
+  
   js = Joystick::getInstance();
-  gameEnded = false;
-  isPlayerBlinking = false;
+  sound = Sound::getInstance();
   asteroidsList = LinkedList<Asteroid*>();
   
   playerPos[0] = 4;
@@ -21,10 +32,6 @@ Game::Game(){
   
   powerUp[0] = -1;
   powerUp[1] = -1;
-  lastPowerUpCheckTime = 0;
-  isPowerUpDisplayed = false;
-  powerUpDisplayTime = 0;
-  powerUpInitTime = 0;
   
   displayMatrix[playerPos[0]][playerPos[1]] = 1;  
 }
@@ -43,7 +50,7 @@ void Game::playGame(){
   else{
     if(!isPlayingLevel) 
       startLevel(currentLevel);
-    else if(levelDuration < (millis() - levelStartingTime)/1000){
+    else if(levelDuration/oneSecondInMillis < (millis() - levelStartingTime)/oneSecondInMillis){
       endLevel(currentLevel);
       if(currentLevel == maxLevel) 
         endGame();
@@ -58,28 +65,32 @@ void Game::playGame(){
 
 void Game::startLevel(int level){
   updateDisplay();
-  //TO DO: move playerName init to start of game, not level
-  playerName = readPlayerNameFromEEPROM(currentPlayerNameAddrs);
   levelStartingTime = millis();
-  lastTimerChangeTime = millis();
   isPlayingLevel = true;  
+  
   asteroidDeploymentInterval = defaultAsteroidDeploymentInterval - level*asteroidDeploymentIntervalIncreaseSlope;
   asteroidsSpeed = defaultAsteroidsSpeed - level*asteroidSpeedIncreaseSlope;
+  
   lcd.clear();
   lcd.setCursor(0,0);
-  lcd.print("Lvl:");
+  lcd.print("Level:");
   lcd.print(level);
   lcd.setCursor(0,1);
   lcd.print("Lives:");
-  updateLives();
-  updateScoreAndTimer();
-  tone(buzzerPin, startLevelBuzzerFreq,startLevelBuzzerDuration);
+  
+  updateLivesDisplay();
+  initScoreAndTimer();
+  
+  sound->playSound(startLevelBuzzerFreq,startLevelBuzzerDuration);
 }
 
 void Game::playLevel(){
+  bool changeHasBeenMade = false;
+  
   if(js->hasButtonBeenPressed()){
     isPlayerBlinking = !isPlayerBlinking;
   }
+  
   // blink player
   if(isPlayerBlinking && millis() - playeBlnkingTime > playeBlnkingInterval){
     displayMatrix[playerPos[0]][playerPos[1]] = !displayMatrix[playerPos[0]][playerPos[1]];
@@ -90,77 +101,106 @@ void Game::playLevel(){
     displayMatrix[playerPos[0]][playerPos[1]] = 1;
     lc.setLed(0, playerPos[0], playerPos[1], displayMatrix[playerPos[0]][playerPos[1]]);
   }
-  //place asteroids
-  //check for time to deplay and asteroids max count
-  if(millis() - lastDeployedAsteroidTime > asteroidDeploymentInterval && maxAsteroids() > asteroidsList.size() ){
-    placeNewAsteroid();
-    lastDeployedAsteroidTime = millis();
-    updateDisplay();
-  }
+  
   // move asteroids
   if(millis() - lastAsteroidMovedTime > asteroidsSpeed){
     updateAsteroidsPosition();
     lastAsteroidMovedTime = millis();
-    updateDisplay();
+    changeHasBeenMade = true;
   }
+  
+  //place asteroids
+  //check for time to deploy and asteroids max count
+  if(millis() - lastDeployedAsteroidTime > asteroidDeploymentInterval && maxAsteroids() > asteroidsList.size() ){
+    placeNewAsteroid();
+    lastDeployedAsteroidTime = millis();
+    changeHasBeenMade = true;
+  }
+  
   // place powerUps
   if(isPowerUpDisplayed == false && millis() - lastPowerUpCheckTime > powerUpCheckInterval && currentLevel >= lifePowerUpIntroductionLevel){
     lastPowerUpCheckTime = millis();
     providePowerUp();
+    changeHasBeenMade = true;
   }
+  
   // blink powerUps
   if(isPowerUpDisplayed == true && millis() - powerUpDisplayTime > powerUpBlinkingInterval){
     displayMatrix[powerUp[0]][powerUp[1]] = !displayMatrix[powerUp[0]][powerUp[1]]; 
-    tone(buzzerPin, powerUpBlinkingBuzzerFreq,powerUpBlinkingBuzzerDuration);
+    sound->playSound(powerUpBlinkingBuzzerFreq,powerUpBlinkingBuzzerDuration);
     powerUpDisplayTime = millis();
+    changeHasBeenMade = true;
   }
+  
   // delete powerUps
-  if(millis() -  powerUpInitTime > powerUpDisplayDuration*1000){
+  if(millis() -  powerUpInitTime > powerUpDisplayDuration){
     isPowerUpDisplayed = false;
     displayMatrix[powerUp[0]][powerUp[1]] = 0;
+    changeHasBeenMade = true;
   }
-  
-  if(millis() - lastMoved > moveInterval){
+
+  // move player
+  if(millis() - lastMoved > playerSpeed){
     updatePlayerPosition();
     lastMoved = millis(); 
+    changeHasBeenMade = true;
+  }
+
+  if(changeHasBeenMade == true){
     updateDisplay();
   }
-  
-  if(lives == 0){
-    tone(buzzerPin, endGameBuzzerFreq,endGameBuzzerDuration);
-    delay(1000);
+
+  // end game condition
+  if(lives <= 0){
+    sound->playSound(endGameBuzzerFreq,endGameBuzzerDuration);
+    delay(oneSecondInMillis);
     endGame();
   }
-  
 }
 
-void Game::updateLives(){
+void Game::updateLivesDisplay(){
   lcd.setCursor(6, 1);
-  lcd.print(" ");
   lcd.print(lives);
   if(lives < 10){
     lcd.print(" ");
   }  
 }
 
+void Game::initScoreAndTimer(){
+  unsigned long long time = levelDuration/oneSecondInMillis - (millis() - levelStartingTime)/oneSecondInMillis;
+     
+  //timer
+  int minutes = time / 60;
+  int seconds = time % 60;
+  lcd.setCursor(9,1);
+  lcd.print("T: ");
+  lcd.print(minutes);
+  lcd.print(":");
+  seconds < 10 ? lcd.print("0") : true;
+  lcd.print(seconds);
+  
+  //score
+  lcd.setCursor(9,0);
+  lcd.print("S: ");
+  lcd.print(score);
+    
+  lastTimerChangeTime = millis();
+}
+
 void Game::updateScoreAndTimer(){  
-  long time = levelDuration - (millis() - levelStartingTime)/1000;
-  if(time < 0){
-    lcd.setCursor(11,1);
-    lcd.print("FIN "); 
-  }
-  else if(millis() - lastTimerChangeTime > 1000){
+  unsigned long long time = levelDuration/oneSecondInMillis - (millis() - levelStartingTime)/oneSecondInMillis;
+  if(time >= 0 && millis() - lastTimerChangeTime > oneSecondInMillis){
     //timer
     int minutes = time / 60;
     int seconds = time % 60;
-    lcd.setCursor(11,1);
+    lcd.setCursor(12,1);
     lcd.print(minutes);
-    lcd.print(":");
+    lcd.setCursor(14,1);
     seconds < 10 ? lcd.print("0") : true;
     lcd.print(seconds);
     //score
     score+=currentLevel;
-    lcd.setCursor(11,0);
+    lcd.setCursor(12,0);
     lcd.print(score);
     
     lastTimerChangeTime = millis();
@@ -168,6 +208,7 @@ void Game::updateScoreAndTimer(){
 }
 
 void Game::endLevel(int level){
+  // end level display
   lcd.clear();
   lcd.setCursor(0,0);
   lcd.print("Lvl ");
@@ -177,50 +218,59 @@ void Game::endLevel(int level){
   lcd.print("Score: ");
   lcd.print(score);
 
-  while(asteroidsList.size() != 0){    
-    int x = asteroidsList.get(0)->getX();
-    int y = asteroidsList.get(0)->getY();
-    displayMatrix[x][y] = 0;
-    delete(asteroidsList.get(0));
-    asteroidsList.remove(0);
-  }
+  // delete asteroids
+  deleteAllAsteroids();
+  
+  //delete powerUps
   displayMatrix[powerUp[0]][powerUp[1]] = 0;
   displayMatrix[playerPos[0]][playerPos[1]] = 1;
+  
   updateDisplay();
   resetPowerUp();
-  tone(buzzerPin, endLevelBuzzerFreq,endLevelBuzzerDuration);
-  delay(5000);
+  
+  sound->playSound(endLevelBuzzerFreq,endLevelBuzzerDuration);
+  delay(5*oneSecondInMillis);
 }
 void Game::endGame(){
+  // display palyer in case game ended while it was blinking
+  displayMatrix[playerPos[0]][playerPos[1]] = 1;
+  
   lcd.clear();
   lcd.setCursor(0,0);
   lcd.print("Game end!");
-  delay(2000);
+  delay(2*oneSecondInMillis);
+  
   int highscorePos = checkAndSaveHighscore();
+
+  // display Highscore message
   if(highscorePos > 0){
-    tone(buzzerPin, endGameCongratsBuzzerFreq,endGameCongratsBuzzerDuration);
+    sound->playSound(endGameCongratsBuzzerFreq,endGameCongratsBuzzerDuration);
     lcd.clear();
     lcd.setCursor(0,0);
     lcd.print("Congrats!");
     lcd.setCursor(0,1);
     lcd.print("New highscore!");
-    delay(2000);
+    delay(2*oneSecondInMillis);
     lcd.clear();
     lcd.setCursor(0,0);
     lcd.print("You are now in");
     lcd.setCursor(0,1);
     lcd.print("place ");
     lcd.print(highscorePos);
-    delay(2000);
+    delay(2*oneSecondInMillis);
   }
+
+  // end game details
   lcd.clear();
   lcd.setCursor(0,0);
   lcd.print(playerName);
   lcd.setCursor(0,1);
-  lcd.print("Score: ");
+  lcd.print("Score:");
   lcd.print(score);
-  lcd.print(">Menu");
+  lcd.print(" >Menu");
   gameEnded = true;
+
+  deleteAllAsteroids();
 }
 
 void Game::updatePlayerPosition(){
@@ -255,30 +305,42 @@ void Game::updatePlayerPosition(){
 
   if(lastPlayerPos[0] != playerPos[0] || lastPlayerPos[1] != playerPos[1]){
 
+    // handle player-powerUp collision
     if(playerPos[0] == powerUp[0] && playerPos[1] == powerUp[1]){
       activatePowerUp();
     }
+    
+    // if the cell the player goes is 1 and is not a powerUp
+    // then is a asteroid
+    // handle player-asteroid collision
     else if( displayMatrix[playerPos[0]][playerPos[1]] == 1 ){
       lives--;
-      tone(buzzerPin, lostLifeBuzzerFreq,lostLifeBuzzerDuration);
-      updateLives();
-      if(lives == 0) return;
-      for(int i = 0; i < asteroidsList.size()-1; i++ ){
+      sound->playSound(lostLifeBuzzerFreq,lostLifeBuzzerDuration);
+      updateLivesDisplay();
+      
+      if(lives <= 0) return;
+
+      //remove collided asteroid from asteroidList
+      for(int i = 0; i < asteroidsList.size(); i++ ){
         int x = asteroidsList.get(i)->getX();
         int y = asteroidsList.get(i)->getY();
         if(x == playerPos[0] && y == playerPos[1]){
-          delete(asteroidsList.get(i));
-          asteroidsList.remove(i);
+          deleteAsteroid(i);
           break;
         }
       }
     }  
-    displayMatrix[lastPlayerPos[0]][lastPlayerPos[1]] = 0;    
+    
+    //display player movement
+    displayMatrix[lastPlayerPos[0]][lastPlayerPos[1]] = 0;   
+    displayMatrix[playerPos[0]][playerPos[1]] = 1;  
    } 
 }
 
 void Game::activatePowerUp(){
   int option;
+
+  // chose randomly a powerUp based on level
   if(currentLevel >= destructionPowerUpIntroductionLevel){
     option = random(0,2);
   }
@@ -289,73 +351,75 @@ void Game::activatePowerUp(){
     resetPowerUp();
     return;
   }
+
+  // lives++ powerUp
   if(option == 0){
     lives++;
-    updateLives();
+    updateLivesDisplay();
   }
+  // destroy asteroids powerUp
   else if(option == 1){
-    for(int i = 0; i < asteroidsList.size()-1; i++ ){
-      int x = asteroidsList.get(i)->getX();
-      int y = asteroidsList.get(i)->getY();      
-   
-      delete(asteroidsList.get(i));
-      asteroidsList.remove(i);
-      displayMatrix[x][y] = 0;
-      i--;
-    }
+    // delete asteroids
+    deleteAllAsteroids();
   }
+  
   resetPowerUp();
-  tone(buzzerPin, powerUpActivationBuzzerFreq,powerUpActivationBuzzerDuration);
+  sound->playSound(powerUpActivationBuzzerFreq,powerUpActivationBuzzerDuration);
 }
 
 void Game::placeNewAsteroid(){
   Asteroid* ob = new Asteroid();
+  // verify that the place the Asteroid spawns is empty
   while(displayMatrix[ob->getX()][ob->getY()] == 1){
+    Serial.println("brrr");
     delete ob;
     ob = new Asteroid();
   }
+  
   asteroidsList.add(ob);  
   displayMatrix[ob->getX()][ob->getY()] = 1;
+  
+  // display asteroid on matrix to avoid possible late call of updateDisplay function
+  lc.setLed(0, ob->getX(), ob->getY(), 1);
 }
 
 void Game::updateAsteroidsPosition(){
-  for(int i = 0; i < asteroidsList.size()-1; i++ ){
+  for(int i = 0; i < asteroidsList.size(); i++ ){
     int x = asteroidsList.get(i)->getX();
     int y = asteroidsList.get(i)->getY();
-    
-    if(displayMatrix[x][y] == 0){
-      delete(asteroidsList.get(i));
-      asteroidsList.remove(i);
-      continue;
-    }
-    else 
-      displayMatrix[x][y] = 0;
-      
+
+    displayMatrix[x][y] = 0;
     asteroidsList.get(i)->advance();
     
     x = asteroidsList.get(i)->getX();
     y = asteroidsList.get(i)->getY();    
+
+    // if asteroid moved outside the matrix, delete it
     if(x > 7 || x < 0 || y < 0 || y > 7){
-      delete(asteroidsList.get(i));
-      asteroidsList.remove(i);
+      deleteAsteroid(i);
       i--;
       continue;
     }
-    
-    if(displayMatrix[x][y] == 1){
-      if( isPowerUpDisplayed && x == powerUp[0] && y == powerUp[1] ){
-        continue;
-      }
-      else {
-        if(x == playerPos[0] && y == playerPos[1]){
-          lives--; 
-          updateLives();
-          tone(buzzerPin, lostLifeBuzzerFreq,lostLifeBuzzerDuration);
-          if(lives == 0) return;
-        }
-        delete(asteroidsList.get(i));
-        asteroidsList.remove(i);
-      }
+        
+    // collision handler
+    // asteroid-player collision, decrease number of lives, destroy asteroid
+    if(x == playerPos[0] && y == playerPos[1]){
+      lives--; 
+      updateLivesDisplay();
+      sound->playSound(lostLifeBuzzerFreq,lostLifeBuzzerDuration);
+      if(lives <= 0) return;
+      deleteAsteroid(i);
+      i--;
+    }
+    // asteroid-powerUp collision, do nothing
+    else if( isPowerUpDisplayed && x == powerUp[0] && y == powerUp[1] ){
+      continue;
+    }
+    //asteroid-asteroid collision
+    else if(displayMatrix[x][y] == 1){
+      // at collision, delete just the current asteroid
+      deleteAsteroid(i);
+      i--;
     }
     else{
       displayMatrix[x][y] = 1;
@@ -372,9 +436,11 @@ void Game::resetPowerUp(){
   powerUp[1] = -1;
 }
 
+//display power up based on chance
 void Game::providePowerUp(){
  int chance = random(0,powerUpRandomness);
   if( chance != 0 ) return;
+  // display powerUp on empty cell
   do{
     powerUp[0] = random(0,8);
     powerUp[1] = random(0,8);
@@ -385,38 +451,60 @@ void Game::providePowerUp(){
   powerUpInitTime = millis();
   powerUpDisplayTime = millis();
   isPowerUpDisplayed = true;
-  
 }
 
 int Game::checkAndSaveHighscore(){
-  for(int i=0; i<3;i++){
-    int currentAddrs = highscoresAddrs + i*(2+maxLengthName);
+  for(int i=0; i<highscoreListLength;i++){
+    // addres of the last highscore
+    int currentAddrs = highscoresAddrs + i*(highscoreListLength -1 + maxLengthName);
     int value = readFromEEPROM<int>(currentAddrs);
+    
     if(score > value){
-      // move places down
-      if( i < 2 ){
-        int nextPlaceAddrs = currentAddrs + 2+maxLengthName;
-        for(int addrs = nextPlaceAddrs + (2-i)*(2 + maxLengthName) -1; addrs >= nextPlaceAddrs ; addrs-- ){
-          int bit = EEPROM.read(addrs - 2 - maxLengthName);
+      // shift highscores downards
+      if( i < highscoreListLength-1 ){
+        int nextPlaceAddrs = currentAddrs + scoreByteLength + maxLengthName;
+        for(int addrs = nextPlaceAddrs + (highscoreListLength-1-i)*(scoreByteLength + maxLengthName) -1; addrs >= nextPlaceAddrs ; addrs-- ){
+          int bit = EEPROM.read(addrs - scoreByteLength - maxLengthName);
           EEPROM.write(addrs, bit);
         }
       }
       //save to EEPROM
       saveToEEPROM<int>(currentAddrs, score);
-      for(int pos = currentAddrs + 2; pos < currentAddrs + 2 + maxLengthName; pos++){
-        if(playerName.length() > pos-currentAddrs-2){
-          saveToEEPROM<char>(pos, playerName[pos-currentAddrs-2]);
+      for(int pos = currentAddrs + scoreByteLength; pos < currentAddrs + scoreByteLength + maxLengthName; pos++){
+        if(playerName.length() > pos-currentAddrs-scoreByteLength){
+          saveToEEPROM<char>(pos, playerName[pos-currentAddrs-scoreByteLength]);
         }
         else saveToEEPROM<char>(pos, 0);
       }
+      // returns the position the score is saved in the highscore list
       return i+1; 
     }
   }
   return 0;  
 }
 
+void Game::deleteAsteroid(int pos){
+  delete(asteroidsList.get(pos));
+  asteroidsList.remove(pos);
+}
+
+void Game::deleteAllAsteroids(){
+  while(asteroidsList.size() != 0){   
+    int x = asteroidsList.get(0)->getX();
+    int y = asteroidsList.get(0)->getY();
+    displayMatrix[x][y] = 0;
+    delete(asteroidsList.get(0));
+    asteroidsList.remove(0);
+  }
+}
+
+// formula to determine the maxAsteroids number
 int Game::maxAsteroids(){
   return defaultMaxAsteroids + (currentLevel/3) - (currentLevel/14);
+}
+
+int Game::calculatePlayerSpeed(){
+  return minPlayerSpeed + playerSpeedStep*(playerSpeedMaxSteps- readFromEEPROM<int>(playerSpeedAddrs));
 }
 
 void Game::updateDisplay(){

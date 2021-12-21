@@ -3,17 +3,18 @@
 
 Joystick *Joystick::instance = 0;
 
-extern const byte pinSW;
-extern const byte pinX;
-extern const byte pinY;
-
 Joystick::Joystick() {
+  sound = Sound::getInstance();
+  
   xValue = 0;
   yValue = 0;
+  
   joyMoved = false;
+  
   swState = HIGH;
   swReading = HIGH;
   prevSwReading = HIGH;
+  
   debounceTime = 0;
 }
 
@@ -43,7 +44,7 @@ bool Joystick::hasButtonBeenPressed(){
         swState = swReading;
         // case for falling
         if(swReading == 0) {
-          tone(buzzerPin, joystickPressBuzzerFreq,joystickPressBuzzerDuration);
+          sound->playSound(joystickPressBuzzerFreq,joystickPressBuzzerDuration);
           return true;
         }
     }

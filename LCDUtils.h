@@ -4,8 +4,6 @@
 #include "Consts.h"
 
 extern LiquidCrystal lcd;
-extern const int brightnessPin;
-extern const int contrastPin;
 
 void LCDSetup();
 void clearLine(int row);

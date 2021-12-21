@@ -3,31 +3,34 @@
 #include "Settings.h"
 #include "Joystick.h"
 #include "Asteroid.h"
-#include "Shield.h"
 #include "Consts.h"
+#include "Sound.h"
 #include <LinkedList.h>
 
 extern LiquidCrystal lcd;
 
 class Game{
   int lives;
-  long time;
   int currentLevel;
   bool gameEnded;
   bool isPlayingLevel;
-  long levelStartingTime;
-  long lastTimerChangeTime;
+  unsigned long long levelStartingTime;
+  unsigned long long lastTimerChangeTime;
   
-  long lastPowerUpCheckTime;
+  unsigned long long lastPowerUpCheckTime;
   bool isPowerUpDisplayed;
   byte powerUp[2];
-  long powerUpDisplayTime;
-  long powerUpInitTime;
-  long playeBlnkingTime;
+  unsigned long long powerUpDisplayTime;
+  unsigned long long powerUpInitTime;
+
+  int playerSpeed;
+  unsigned long long playeBlnkingTime;
   bool isPlayerBlinking = false;
   
-  int score;
   Joystick* js;
+  Sound* sound;
+  
+  int score;
   int asteroidDeploymentInterval;
   int asteroidsSpeed;
   
@@ -35,9 +38,9 @@ class Game{
   byte lastPlayerPos[2];
   String playerName;
   
-  unsigned int long long lastMoved = 0;
-  unsigned int long long lastDeployedAsteroidTime = 0;
-  unsigned int long long lastAsteroidMovedTime = 0;
+  unsigned long long lastMoved = 0;
+  unsigned long long lastDeployedAsteroidTime = 0;
+  unsigned long long lastAsteroidMovedTime = 0;
 
   bool matrixChanged;
   
@@ -56,22 +59,32 @@ class Game{
   public:
     Game();
     static Game *getInstance();
+    
     void playGame();
     void startLevel(int level);
     void playLevel();
     void endLevel(int leve);
     void endGame();
+    
     void updatePlayerPosition();
-    void updateAsteroidsPosition();
+    int calculatePlayerSpeed();
+    
     void updateDisplay();
     void updateLCD();
+    void initScoreAndTimer();
     void updateScoreAndTimer();
-    void updateLives();
-    void placeNewAsteroid();
+    void updateLivesDisplay();
     int checkAndSaveHighscore();
+    
     void checkAndProvidePowerUps();
     void providePowerUp();
     void resetPowerUp();
     void activatePowerUp();
+    
+    void placeNewAsteroid();
+    void updateAsteroidsPosition();
+    void deleteAsteroid(int pos);
+    void deleteAllAsteroids();
     int maxAsteroids();
+    
 };

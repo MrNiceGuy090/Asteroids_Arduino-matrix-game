@@ -4,15 +4,20 @@ const int Asteroid::directions[8][2] = {{1,1},{1,0},{1,-1},{0,-1}, {-1,-1},{-1,0
 const int Asteroid::directionsSize = 8;
 
 Asteroid::Asteroid(){
+  //chose randomly a direction of movement for Asteroid
   int randomDirection = random(0,directionsSize);
   movementDirection[0] = directions[randomDirection][0];
   movementDirection[1] = directions[randomDirection][1];
+
+  //generate Asteroid's coordonates
   int randomAxis = random(0,2);
   generateFirstAxis(randomAxis);
   generateSecondAxis(randomAxis^1);
 
 };
 
+// asign a random value to an axis, such that, given the direction,
+// the Asteroid can travel at least one square
 void Asteroid::generateFirstAxis(int axis){
   int* axisPtr;
   if(axis == 0){
@@ -31,6 +36,9 @@ void Asteroid::generateFirstAxis(int axis){
     *axisPtr = random(0, matrixSize-1);
   
 }
+
+// complement the first axis with generating the second,
+// such that the Asteroid spawn on the edges of the matrix
 void Asteroid::generateSecondAxis(int axis){  
   int* otherAxisPtr;
   if(axis == 0){

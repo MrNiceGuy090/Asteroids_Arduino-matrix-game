@@ -2,18 +2,21 @@
 #include<LiquidCrystal.h>
 #include "Settings.h"
 #include "Consts.h"
+#include "Sound.h"
 
 extern LiquidCrystal lcd;
-extern String state;
+extern char* state;
 
 class Menu {
   static Menu *instance;
   int selectingOption;
   Settings *settings;
+  Sound *sound;
+  
   int textStartingPos;
   
   Menu();
-  void displayMenuWindow(int selectingOption, int optionsSize, String* options);
+  void displayMenuWindow(int selectingOption, int optionsSize, const char** options);
   void displayMenuOptions();
   void displayHighscore();
   void displaySettings();
@@ -21,15 +24,18 @@ class Menu {
   
   public:
     static Menu *getInstance();
+    Settings* getSettings();
+    
     void show();
     void resetMenu();
+    
     void increaseSelectingOption();
     void decreaseSelectingOption();
     void scrollTextLeft();
     void scrollTextRight();
     
-    String getState();
-    void setState(String value);
+    char* getState();
+    void setState(char* value);
     int getSelectingOption();
-    Settings* getSettings();
+    int getMaxSelectingOption();
 };
