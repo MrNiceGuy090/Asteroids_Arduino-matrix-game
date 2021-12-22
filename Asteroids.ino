@@ -58,7 +58,7 @@ void loop() {
     }
   }
   else if(state == "Highscores"){   
-    if(js->hasButtonBeenPressed() && menu->getSelectingOption() == 3){
+    if(js->hasButtonBeenPressed() && menu->getSelectingOption() == highscoreListLength){
       state = "MainMenu";
       menu->resetMenu();
       menu->show();
@@ -74,31 +74,31 @@ void loop() {
   }
   else if(state == "SettingsMenu"){
     if(js->hasButtonBeenPressed()){
-      if(menu->getSelectingOption() == 0){
+      if(settingsMenuOptions[menu->getSelectingOption()] == "Name"){
         state = "EditName";
       }
-      else if(menu->getSelectingOption() == 1){
+      else if(settingsMenuOptions[menu->getSelectingOption()] == "Level"){
         state = "EditLevel";
       }
-      else if(menu->getSelectingOption() == 2){
+      else if(settingsMenuOptions[menu->getSelectingOption()] == "Player speed"){
         state = "EditPlayerSpeed";
       }
-      else if(menu->getSelectingOption() == 3){
+      else if(settingsMenuOptions[menu->getSelectingOption()] == "Contrast"){
         state = "EditContrast";
       }
-      else if(menu->getSelectingOption() == 4){
+      else if(settingsMenuOptions[menu->getSelectingOption()] == "LCD brightness"){
         state = "EditLCDBrightness";
       }      
-      else if(menu->getSelectingOption() == 5){
+      else if(settingsMenuOptions[menu->getSelectingOption()] == "Game brightness"){
         state = "EditMatrixBrightness";
       }   
-      else if(menu->getSelectingOption() == 6){
+      else if(settingsMenuOptions[menu->getSelectingOption()] == "Sound"){
         state = "EditSound";
       }
-      else if(menu->getSelectingOption() == 7){
+      else if(settingsMenuOptions[menu->getSelectingOption()] == "Reset highscore"){
         state = "ResetHighscore";
       }
-      else if(menu->getSelectingOption() == 8){
+      else if(settingsMenuOptions[menu->getSelectingOption()] == "Back"){
         state = "MainMenu";
         menu->resetMenu();
         menu->show();
@@ -127,7 +127,9 @@ void loop() {
       menu->decreaseSelectingOption();
       menu->show();
     }
-    if(menu->getSelectingOption() == 2){
+    
+    // if the githubRepo is on screen
+    if(menu->getSelectingOption() == aboutInfoOptionsLength-1){
       if(js->isLeft()){
         menu->scrollTextLeft();
         menu->show();

@@ -14,7 +14,6 @@ Sound* Sound::getInstance(){
 }
 
 void Sound::setSound(bool value){
-  Serial.println(value);
   enabled = value;
   saveToEEPROM<bool>(soundOnOffAddrs, enabled);
 }

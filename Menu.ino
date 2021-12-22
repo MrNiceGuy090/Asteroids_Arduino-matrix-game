@@ -16,6 +16,7 @@ Menu* Menu::getInstance(){
   return Menu::instance;
 }
 
+// display menu based on state
 void Menu::show(){
   lcd.clear();  
   if(state == "MainMenu") displayMenuOptions();

@@ -52,8 +52,10 @@ void Game::playGame(){
       startLevel(currentLevel);
     else if(levelDuration/oneSecondInMillis < (millis() - levelStartingTime)/oneSecondInMillis){
       endLevel(currentLevel);
-      if(currentLevel == maxLevel) 
+      if(currentLevel == maxLevel) {
         endGame();
+        return;
+      }
       else
         startLevel(++currentLevel);
     }
@@ -233,7 +235,8 @@ void Game::endLevel(int level){
 }
 void Game::endGame(){
   // display palyer in case game ended while it was blinking
-  displayMatrix[playerPos[0]][playerPos[1]] = 1;
+  lc.setLed(0, playerPos[0], playerPos[1], 1);
+  deleteAllAsteroids();
   
   lcd.clear();
   lcd.setCursor(0,0);
@@ -269,8 +272,6 @@ void Game::endGame(){
   lcd.print(score);
   lcd.print(" >Menu");
   gameEnded = true;
-
-  deleteAllAsteroids();
 }
 
 void Game::updatePlayerPosition(){
@@ -310,7 +311,7 @@ void Game::updatePlayerPosition(){
       activatePowerUp();
     }
     
-    // if the cell the player goes is 1 and is not a powerUp
+    // if the cell the player goes in is 1 and is not a powerUp
     // then is a asteroid
     // handle player-asteroid collision
     else if( displayMatrix[playerPos[0]][playerPos[1]] == 1 ){
@@ -371,7 +372,6 @@ void Game::placeNewAsteroid(){
   Asteroid* ob = new Asteroid();
   // verify that the place the Asteroid spawns is empty
   while(displayMatrix[ob->getX()][ob->getY()] == 1){
-    Serial.println("brrr");
     delete ob;
     ob = new Asteroid();
   }
@@ -500,7 +500,7 @@ void Game::deleteAllAsteroids(){
 
 // formula to determine the maxAsteroids number
 int Game::maxAsteroids(){
-  return defaultMaxAsteroids + (currentLevel/3) - (currentLevel/14);
+  return defaultMaxAsteroids + (currentLevel/3) - (currentLevel/(maxLevel-1));
 }
 
 int Game::calculatePlayerSpeed(){
