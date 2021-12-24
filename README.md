@@ -33,12 +33,15 @@
 
 &emsp; The Joystick, Menu, Settings, Sound and Game classes are singletons and the first one just reads and checks the joystick inputs.
 
-&emsp; The Menu class is responsible to display both Menu's options (2 at each given moment), which are:  
+&emsp; The Menu class is responsible to display both Menu's options (2 at each given moment), which are:
+
 * ```Start game```
 * ```Highscore```
 * ```Settings```
-* ```About``` <br>
+* ```About```
+
 for the Main menu and 
+
 * ```Name```
 * ```Level```
 * ```Player speed```
@@ -47,8 +50,10 @@ for the Main menu and
 * ```Game brightness```
 * ```Sound```
 * ```Reset highscore```
-* ```Back``` <br>
-for the Settings Menu, and highlight a ```selectingOption``` option. To change the selected option, Asteroids.ino listens to joystick inputs and increases or decreases this option with the help of ```increaseSelectingOption()``` and ```decreaseSelectingOption()``` methods of the Menu class. Following the same logic, once the joystick button is pressed, the state changes according to the Menu option selected.
+* ```Back```
+
+for the Settings Menu,<br><br>
+and highlight a ```selectingOption``` option. To change the selected option, Asteroids.ino listens to joystick inputs and increases or decreases this option with the help of ```increaseSelectingOption()``` and ```decreaseSelectingOption()``` methods of the Menu class. Following the same logic, once the joystick button is pressed, the state changes according to the Menu option selected.
 
 &emsp; The ```Settings``` class holds the logic to change and save every setting that is available.
 
